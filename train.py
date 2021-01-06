@@ -32,10 +32,7 @@ hparams = get_params(args.config)
 converter = get_converter(hparams.embedding, word_dict_file=hparams.word_dict_file)
 train_dataset = TrainingDataset(train_news_file, train_behaviors_file, hparams, converter, npratio=hparams.npratio)
 train_dataloader = DataLoader(train_dataset, hparams.batch_size)
-val_news_dataset = BaseDataset(valid_news_file, valid_behaviors_file, hparams, converter)
-imp_dataloader = DataLoader(val_news_dataset, 1)
-val_news_dataloader = DataLoader(NewsDataset(val_news_dataset), hparams.batch_size)
-val_user_dataloader = DataLoader(UserDataset(val_news_dataset), hparams.batch_size)
+valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter)
 model = NRMSModel(hparams)
 saved_dir = f"{config['mind_type']}/{config['model_class']}"
 checkpoint_callback = ModelCheckpoint(monitor="group_auc", filename="{group_auc:.4f}", save_top_k=3, mode="max",
@@ -43,5 +40,5 @@ checkpoint_callback = ModelCheckpoint(monitor="group_auc", filename="{group_auc:
 tb_logger = pl_loggers.TensorBoardLogger(f"saved/logs/{saved_dir}", name=args.log)
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 trainer = pl.Trainer(gpus=1, max_epochs=5, deterministic=True, val_check_interval=100, logger=tb_logger,
-                     callbacks=[checkpoint_callback])
-trainer.fit(model, train_dataloader, [val_news_dataloader, val_user_dataloader, imp_dataloader])
+                     callbacks=[checkpoint_callback, valid_callback])
+trainer.fit(model, train_dataloader)
