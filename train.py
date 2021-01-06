@@ -6,8 +6,6 @@ import argparse
 import pytorch_lightning as pl
 import pytorch_lightning.loggers as pl_loggers
 
-from data_loader.base_dataset import BaseDataset
-from data_loader.test_dataset import UserDataset, NewsDataset
 from data_loader.training_dataset import TrainingDataset
 from torch.utils.data.dataloader import DataLoader
 
@@ -32,7 +30,8 @@ hparams = get_params(args.config)
 converter = get_converter(hparams.embedding, word_dict_file=hparams.word_dict_file)
 train_dataset = TrainingDataset(train_news_file, train_behaviors_file, hparams, converter, npratio=hparams.npratio)
 train_dataloader = DataLoader(train_dataset, hparams.batch_size)
-valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter)
+val_check_interval = len(train_dataloader) // 10
+valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter, val_check_interval)
 model = NRMSModel(hparams)
 saved_dir = f"{config['mind_type']}/{config['model_class']}"
 checkpoint_callback = ModelCheckpoint(monitor="group_auc", filename="{group_auc:.4f}", save_top_k=3, mode="max",

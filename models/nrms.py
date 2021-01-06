@@ -85,35 +85,6 @@ class NRMSModel(pl.LightningModule):
         self.log('train_loss', loss)
         return loss
 
-    def validation_step(self, batch, batch_idx, dataloader_idx):
-        if dataloader_idx == 0:
-            index, news = batch
-            news_vec = self.news_encoder(news)
-            self.news_vectors.update(dict(zip(index.cpu().tolist(), news_vec.cpu().numpy())))
-        elif dataloader_idx == 1:
-            index, clicked_news = batch
-            user_vec = self.user_encoder(clicked_news)
-            self.user_vectors.update(dict(zip(index.cpu().tolist(), user_vec.cpu().numpy())))
-        else:
-            # calculate for only on instance
-            candidate_index, imp_index, y = batch
-            candidate_index = [i.cpu().tolist()[0] for i in candidate_index]
-            y = [i.cpu().tolist()[0] for i in y]
-            imp_index = imp_index.cpu().tolist()[0]
-            candidate_vector = np.stack([self.news_vectors[i] if i in self.news_vectors else self.news_vectors[0]
-                                         for i in candidate_index])
-            user_vector = self.user_vectors[imp_index]
-            pred = np.dot(candidate_vector, user_vector).tolist()
-            return y, pred
-
-    def validation_epoch_end(self, outputs):
-        y, pred = [], []
-        for out in outputs[2]:
-            y.append(out[0])
-            pred.append(out[1])
-        res = cal_metric(y, pred, self.metrics)
-        log = [self.log(k, v) for k, v in res.items()]
-
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
