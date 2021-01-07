@@ -59,10 +59,6 @@ def download_data(mind_type="small"):
         download_resources(utils_url, os.path.join(data_root_path, 'utils'), mind_utils)
 
 
-def get_params(yaml_name, **kwargs):
-    if yaml_name:
-        yaml_path = os.path.join(data_root_path, "utils", yaml_name)
-    else:
-        yaml_path = get_yaml_path()
+def get_params(yaml_path, **kwargs):
     return prepare_hparams(yaml_path, word_emb_file=get_emb_path(), word_dict_file=get_dict_file(), epochs=epochs,
                            show_step=10, user_dict_file=get_user_dict_path(), **kwargs)

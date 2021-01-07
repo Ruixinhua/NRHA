@@ -8,10 +8,9 @@ import torch.nn.functional as F
 from models.layers import AttLayer, TimeDistributed
 import pytorch_lightning as pl
 from utils.loss import CategoricalLoss
-from utils.metrics import cal_metric
 
 
-class NRMSModel(pl.LightningModule):
+class BaseModel(pl.LightningModule):
 
     def __init__(self, hparams):
         super().__init__()
