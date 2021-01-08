@@ -47,4 +47,4 @@ class AttLayer(nn.Module):
     def forward(self, x):
         attention_weight = torch.unsqueeze(self.attention(x), 2)
         y = torch.sum(x * attention_weight, dim=1)
-        return y
+        return y, attention_weight

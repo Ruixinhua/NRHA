@@ -44,7 +44,7 @@ class BaseModel(pl.LightningModule):
         y = self._embedding_layer(sequences).transpose(0, 1)
         y = self.news_self_att(y, y, y)[0]
         y = F.dropout(y, p=self.dropout).transpose(0, 1)
-        y = self.news_att_layer(y)
+        y = self.news_att_layer(y)[0]
         return y
 
     def user_encoder(self, his_input_title):
@@ -52,7 +52,7 @@ class BaseModel(pl.LightningModule):
         y = TimeDistributed(self.news_encoder)(his_input_title).transpose(0, 1)
         # change size back to (N, S, D)
         y = self.user_self_att(y, y, y)[0].transpose(0, 1)
-        y = self.user_att_layer(y)
+        y = self.user_att_layer(y)[0]
         return y
 
     def forward(self, x):

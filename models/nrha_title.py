@@ -34,7 +34,7 @@ class NRHATitle(BaseModel):
         # shape of y: [N, S, H, D]     E is head_num * head_dim, E = H * D
         y = y.transpose(1, 2).transpose(0, 1)
         # shape of y: [H, N, S, D]
-        y = torch.stack([self_att(h) for h, self_att in zip(y, self.attentions)])
+        y = torch.stack([self_att(h)[0] for h, self_att in zip(y, self.attentions)])
         y = y.transpose(0, 1)
         # shape of y: [N, H, D]
         y = y.reshape(y.shape[0], self.hparams.word_emb_dim)
