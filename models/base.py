@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.layers import AttLayer, TimeDistributed
+from models.layers import AttLayer, TimeDistributed, MultiHeadedAttention
 import pytorch_lightning as pl
 from utils.loss import CategoricalLoss
 
@@ -24,12 +24,13 @@ class BaseModel(pl.LightningModule):
         else:
             self.embedding_layer = nn.Embedding(self.word2vec_embedding.shape[0], self.word_emb_dim).from_pretrained(
                 torch.FloatTensor(self.word2vec_embedding), freeze=False)
-        self.news_att_layer = AttLayer(self.word_emb_dim, self.attention_hidden_dim)
-        self.user_att_layer = AttLayer(self.word_emb_dim, self.attention_hidden_dim)
-        self.news_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
-        self.user_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
+        self.news_att_layer = AttLayer(self.head_num * self.head_dim, self.attention_hidden_dim)
+        self.user_att_layer = AttLayer(self.head_num * self.head_dim, self.attention_hidden_dim)
+        self.news_self_att = MultiHeadedAttention(self.head_num, self.head_dim, self.word_emb_dim)
+        self.user_self_att = MultiHeadedAttention(self.head_num, self.head_dim, self.head_num * self.head_dim)
+        # self.news_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
+        # self.user_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
         # for fast evaluation
-        self.news_vectors, self.user_vectors = {}, {}
 
     def _embedding_layer(self, sequences):
         if self.embedding == "elmo":
@@ -41,17 +42,17 @@ class BaseModel(pl.LightningModule):
         return sequences
 
     def news_encoder(self, sequences):
-        y = self._embedding_layer(sequences).transpose(0, 1)
+        y = self._embedding_layer(sequences)
         y = self.news_self_att(y, y, y)[0]
-        y = F.dropout(y, p=self.dropout).transpose(0, 1)
+        y = F.dropout(y, p=self.dropout)
         y = self.news_att_layer(y)[0]
         return y
 
     def user_encoder(self, his_input_title):
         # change size to (S, N, D): sequence length, batch size, word dimension
-        y = TimeDistributed(self.news_encoder)(his_input_title).transpose(0, 1)
+        y = TimeDistributed(self.news_encoder)(his_input_title)
         # change size back to (N, S, D)
-        y = self.user_self_att(y, y, y)[0].transpose(0, 1)
+        y = self.user_self_att(y, y, y)[0]
         y = self.user_att_layer(y)[0]
         return y
 
