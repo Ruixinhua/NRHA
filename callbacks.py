@@ -1,12 +1,10 @@
-import threading
 import zipfile
-
 import numpy as np
 import torch
 import os
 from pytorch_lightning.callbacks import Callback
 from torch.utils.data.dataloader import DataLoader
-
+from tqdm import tqdm
 from data_loader.base_dataset import BaseDataset
 from data_loader.test_dataset import NewsDataset, UserDataset
 from utils.metrics import cal_metric
@@ -21,12 +19,12 @@ class BaseCallback(Callback):
         super(BaseCallback, self).__init__()
 
     def run_news_users(self, model):
-        for batch in self.news_dataloader:
+        for batch in tqdm(self.news_dataloader):
             "Run news data"
             index, news = batch
             news_vec = model.news_encoder(news.to(model.device))
             self.news_vectors.update(dict(zip(index.cpu().tolist(), news_vec.cpu().numpy())))
-        for batch in self.user_dataloader:
+        for batch in tqdm(self.user_dataloader):
             "Run users data"
             index, clicked_news = batch
             user_vec = model.user_encoder(clicked_news.to(model.device))
@@ -43,9 +41,9 @@ class ValidationCallback(BaseCallback):
     def validation(self, model):
         self.run_news_users(model)
         group_y, group_pred = [], []
-        for candidate, imp_index, y in zip(self.dataset.impr_news, self.dataset.impr_indexes, self.dataset.labels):
+        for candidate, index, y in tqdm(zip(self.dataset.impr_news, self.dataset.impr_indexes, self.dataset.labels)):
             # calculate for only on instance
-            pred = np.dot(np.stack([self.news_vectors[i] for i in candidate]), self.user_vectors[imp_index])
+            pred = np.dot(np.stack([self.news_vectors[i] for i in candidate]), self.user_vectors[index])
             group_y.append(y)
             group_pred.append(pred)
         res = cal_metric(group_y, group_pred, self.metrics)
@@ -78,13 +76,13 @@ class TestCallback(BaseCallback):
         with torch.no_grad():
             self.run_news_users(model)
             group_imp_indexes, group_pred = [], []
-            for candidate, imp_index in zip(self.dataset.impr_news, self.dataset.impr_indexes):
+            for candidate, imp_index in tqdm(zip(self.dataset.impr_news, self.dataset.impr_indexes)):
                 # calculate for only on instance
                 pred = np.dot(np.stack([self.news_vectors[i] for i in candidate]), self.user_vectors[imp_index])
                 group_pred.append(pred)
                 group_imp_indexes.append(imp_index)
             with open(os.path.join(self.pred_dir, 'prediction.txt'), 'w') as f:
-                for impr_index, preds in zip(group_imp_indexes, group_pred):
+                for impr_index, preds in tqdm(zip(group_imp_indexes, group_pred)):
                     impr_index += 1
                     pred_rank = (np.argsort(np.argsort(preds)[::-1]) + 1).tolist()
                     pred_rank = '[' + ','.join([str(i) for i in pred_rank]) + ']'

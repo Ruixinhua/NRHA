@@ -1,3 +1,5 @@
+import torch
+
 from callbacks import TestCallback, ValidationCallback
 from configuration import get_path, get_params
 import argparse
@@ -38,10 +40,11 @@ pred_dir = f"saved/prediction/{saved_dir}/{args.log}"
 valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter, ckpt_dir, interval)
 # TODO: modify name
 tb_logger = pl_loggers.TensorBoardLogger(f"saved/logs/{saved_dir}", name=args.log)
-model = NRHATitle(hparams)
+if config["model_class"] == "nrha":
+    model_class = NRHATitle
+else:
+    model_class = BaseModel
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 trainer = pl.Trainer(gpus=config["gpus"], accelerator=accelerator, max_epochs=epochs, deterministic=True,
                      logger=tb_logger, callbacks=[valid_callback])
-trainer.fit(model, train_dataloader)
-test_callback = TestCallback(test_news_file, test_behaviors_file, hparams, converter, ckpt_dir, pred_dir)
-test_callback.on_fit_end(trainer, model)
+trainer.fit(model_class(hparams), train_dataloader)
