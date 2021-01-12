@@ -1,10 +1,7 @@
 import json
 import os
 
-import torch
-import numpy as np
 from torch.utils.data.dataset import Dataset
-
 from utils.helpers import load_dict, word_tokenize, init_matrix
 
 
@@ -59,7 +56,7 @@ class BaseDataset(Dataset):
                             article = article if article else [[""]]
                     self.body.append(article)
                 self.nid2index[nid] = len(self.nid2index) + 1
-
+        rd.close()
         self._init_matrix()
 
     def _init_matrix(self):
@@ -100,13 +97,15 @@ class BaseDataset(Dataset):
                 impr_news = [self.nid2index[i.split("-")[0]] for i in impr.split()]
                 if not test_set:
                     self.labels.append([int(i.split("-")[1]) for i in impr.split()])
-                uindex = self.uid2index[uid] if uid in self.uid2index else 0
-
+                if uid not in self.uid2index:
+                    self.uid2index[uid] = len(self.uid2index) + 1
+                uindex = self.uid2index[uid]
                 self.histories.append(history)
                 self.impr_news.append(impr_news)
                 self.impr_indexes.append(impr_index)
                 self.uindexes.append(uindex)
                 impr_index += 1
+        rd.close()
 
     @staticmethod
     def load_entity(entity):
