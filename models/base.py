@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.layers import AttLayer, TimeDistributed, MultiHeadedAttention
+from models.layers import AttLayer, TimeDistributed, MultiHeadedAttention, clones
 import pytorch_lightning as pl
 from utils.loss import CategoricalLoss
 
@@ -28,23 +28,22 @@ class BaseModel(pl.LightningModule):
         self.user_att_layer = AttLayer(self.head_num * self.head_dim, self.attention_hidden_dim)
         self.news_self_att = MultiHeadedAttention(self.head_num, self.head_dim, self.word_emb_dim)
         self.user_self_att = MultiHeadedAttention(self.head_num, self.head_dim, self.head_num * self.head_dim)
-        # self.news_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
-        # self.user_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
+        self.dropouts = nn.Dropout(self.dropout)
         # for fast evaluation
 
     def _embedding_layer(self, sequences):
         if self.embedding == "elmo":
             # only using the last layer results
             sequences = self.embedding_layer(sequences)["elmo_representations"]
-            sequences = F.dropout(sequences[-1], p=self.dropout)
+            sequences = self.dropouts(sequences[-1])
         else:
-            sequences = F.dropout(self.embedding_layer(sequences), p=self.dropout)
+            sequences = self.dropouts(self.embedding_layer(sequences))
         return sequences
 
     def news_encoder(self, sequences):
         y = self._embedding_layer(sequences)
         y = self.news_self_att(y, y, y)[0]
-        y = F.dropout(y, p=self.dropout)
+        y = self.dropouts(y)
         y = self.news_att_layer(y)[0]
         return y
 
