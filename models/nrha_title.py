@@ -1,12 +1,6 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-import copy
-
 import torch
-
-
-__all__ = ["NRHATitle"]
-
 from models.base import BaseModel
 from models.layers import AttLayer, clones
 
