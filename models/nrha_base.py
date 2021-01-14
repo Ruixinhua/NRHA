@@ -11,8 +11,9 @@ class NRHABase(BaseModel):
 
     def __init__(self, hparams):
         super().__init__(hparams)
-        self.news_self_att = nn.Linear(hparams.word_emb_dim, hparams.head_num * hparams.head_dim)
-        self.user_self_att = nn.Linear(hparams.word_emb_dim, hparams.head_num * hparams.head_dim)
+        out_dim = hparams.head_num * hparams.head_dim
+        self.news_encode_layer = nn.Linear(hparams.word_emb_dim, out_dim)
+        self.user_encode_layer = nn.Linear(out_dim, out_dim)
         self.news_attentions = clones(AttLayer(hparams.head_dim, hparams.attention_hidden_dim), hparams.head_num)
         self.user_attentions = clones(AttLayer(hparams.head_dim, hparams.attention_hidden_dim), hparams.head_num)
 
@@ -28,7 +29,7 @@ class NRHABase(BaseModel):
         return y
 
     def sentence_encoder(self, y):
-        y = self.news_self_att(y).view(y.size(0), -1, self.head_num, self.head_dim)
+        y = self.news_encode_layer(y).view(y.size(0), -1, self.head_num, self.head_dim)
         return self.head_encoder(y, self.news_attentions)
 
     def news_encoder(self, sequences):
@@ -39,5 +40,5 @@ class NRHABase(BaseModel):
     def user_encoder(self, his_input_title):
         # run the history news read by user
         y = TimeDistributed(self.news_encoder)(his_input_title)
-        y = self.user_self_att(y).view(y.size(0), -1, self.head_num, self.head_dim)
+        y = self.user_encode_layer(y).view(y.size(0), -1, self.head_num, self.head_dim)
         return self.head_encoder(y, self.user_attentions)
