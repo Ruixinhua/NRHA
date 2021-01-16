@@ -26,8 +26,8 @@ class BaseModel(pl.LightningModule):
                 torch.FloatTensor(self.word2vec_embedding), freeze=False)
         self.news_att_layer = AttLayer(self.head_num * self.head_dim, self.attention_hidden_dim)
         self.user_att_layer = AttLayer(self.head_num * self.head_dim, self.attention_hidden_dim)
-        self.news_encode_layer = MultiHeadedAttention(self.head_num, self.head_dim, self.word_emb_dim)
-        self.user_encode_layer = MultiHeadedAttention(self.head_num, self.head_dim, self.head_num * self.head_dim)
+        self.news_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
+        self.user_self_att = nn.MultiheadAttention(self.word_emb_dim, self.head_num)
         self.dropouts = nn.Dropout(self.dropout)
         # for fast evaluation
 
@@ -42,7 +42,7 @@ class BaseModel(pl.LightningModule):
 
     def news_encoder(self, sequences):
         y = self._embedding_layer(sequences)
-        y = self.news_encode_layer(y, y, y)[0]
+        y = self.news_self_att(y, y, y)[0]
         y = self.dropouts(y)
         y = self.news_att_layer(y)[0]
         return y
@@ -51,14 +51,14 @@ class BaseModel(pl.LightningModule):
         # change size to (S, N, D): sequence length, batch size, word dimension
         y = TimeDistributed(self.news_encoder)(his_input_title)
         # change size back to (N, S, D)
-        y = self.user_encode_layer(y, y, y)[0]
+        y = self.user_self_att(y, y, y)[0]
         y = self.user_att_layer(y)[0]
         return y
 
     def forward(self, x):
-        his_input_title, pred_input_title = x
+        his_input_title, candidate_input_title = x
         user_present = self.user_encoder(his_input_title)
-        news_present = TimeDistributed(self.news_encoder)(pred_input_title)
+        news_present = TimeDistributed(self.news_encoder)(candidate_input_title)
         # equal to Dot(axis=-1)([x, y])
         preds = torch.sum(news_present * user_present.unsqueeze(1), dim=-1)
         preds = F.softmax(preds, dim=-1)
