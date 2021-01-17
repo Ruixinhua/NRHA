@@ -4,12 +4,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ["MultiHeadedAttention", "TimeDistributed", "AttLayer"]
-
 
 def clones(module, N):
     "Produce N identical layers."
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
+
+
+class PositionwiseFeedForward(nn.Module):
+    "Implements FFN equation."
+    def __init__(self, d_model, d_ff, dropout=0.1):
+        super(PositionwiseFeedForward, self).__init__()
+        self.w_1 = nn.Linear(d_model, d_ff)
+        self.w_2 = nn.Linear(d_ff, d_model)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        return self.w_2(self.dropout(F.relu(self.w_1(x))))
 
 
 class MultiHeadedAttention(nn.Module):
@@ -19,7 +29,7 @@ class MultiHeadedAttention(nn.Module):
     http://nlp.seas.harvard.edu/2018/04/03/attention.html#attention
     """
 
-    def __init__(self, h, d_k, word_dim, dropout=0.1):
+    def __init__(self, h, d_k, word_dim, dropout=0):
         "Take in model size and number of heads."
         super(MultiHeadedAttention, self).__init__()
         # We assume d_v always equals d_k
@@ -46,8 +56,7 @@ class MultiHeadedAttention(nn.Module):
         x, self.attn = attention(query, key, value, mask=mask, dropout=self.dropout)
 
         # 3) "Concat" using a view and apply a final linear.
-        x = x.transpose(1, 2).contiguous() \
-            .view(nbatches, -1, self.h * self.d_k)
+        x = x.transpose(1, 2).contiguous().view(nbatches, -1, self.h * self.d_k)
         return self.final(x), self.attn
 
 
@@ -106,3 +115,35 @@ class AttLayer(nn.Module):
         attention_weight = torch.unsqueeze(self.attention(x), 2)
         y = torch.sum(x * attention_weight, dim=1)
         return y, attention_weight
+
+
+class LayerNorm(nn.Module):
+    """
+    Construct a layernorm module (See citation for details).
+    https://arxiv.org/abs/1607.06450
+    """
+    def __init__(self, features, eps=1e-6):
+        super(LayerNorm, self).__init__()
+        self.a_2 = nn.Parameter(torch.ones(features))
+        self.b_2 = nn.Parameter(torch.zeros(features))
+        self.eps = eps
+
+    def forward(self, x):
+        mean = x.mean(-1, keepdim=True)
+        std = x.std(-1, keepdim=True)
+        return self.a_2 * (x - mean) / (std + self.eps) + self.b_2
+
+
+class SublayerConnection(nn.Module):
+    """
+    A residual connection followed by a layer norm.
+    Note for code simplicity the norm is first as opposed to last.
+    """
+    def __init__(self, size, dropout):
+        super(SublayerConnection, self).__init__()
+        self.norm = LayerNorm(size)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, sublayer):
+        "Apply residual connection to any sublayer with the same size."
+        return self.dropout(sublayer(self.norm(x)))
