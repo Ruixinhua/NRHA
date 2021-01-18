@@ -1,6 +1,12 @@
+import argparse
 import os
 import json
 
+from models.base import BaseModel
+from models.nrha_adv import NRHAAdv
+from models.nrha_base import NRHABase
+from models.nrha_mlp import NRHAMLP
+from models.nrha_title import NRHATitle
 from utils.download_utils import download_resources, get_mind_data_set
 from utils.params_utils import prepare_hparams
 
@@ -62,3 +68,30 @@ def download_data(mind_type="small"):
 def get_params(yaml_path, **kwargs):
     return prepare_hparams(yaml_path, word_emb_file=get_emb_path(), word_dict_file=get_dict_file(), epochs=epochs,
                            show_step=10, user_dict_file=get_user_dict_path(), **kwargs)
+
+
+def get_argument():
+    parse = argparse.ArgumentParser(description="Training process")
+    parse.add_argument("--log", "-l", dest="log", metavar="FILE", help="log file", default="test")
+    parse.add_argument("--configure", "-c", dest="config", metavar="FILE", help="yaml file",
+                       default=r"config/nrha.yaml")
+    parse.add_argument("--gup_num", "-g", dest="gpus", metavar="INT", default=1, help="The number of gpu")
+    parse.add_argument("--model_class", "-m", dest="model_class", metavar="TEXT", default="nrha")
+    parse.add_argument("--mind_type", "-t", dest="mind_type", metavar="TEXT", default="demo")
+    parse.add_argument("--head_num", "-n", dest="head_num", metavar="INT", default=20)
+    parse.add_argument("--head_dim", "-d", dest="head_dim", metavar="INT", default=20)
+    parse.add_argument("--batch_size", "-b", dest="batch_size", metavar="INT", default=32)
+    return parse.parse_args()
+
+
+def get_model_class(model_class):
+    if model_class == "nrha":
+        return NRHATitle
+    elif model_class == "nrha_base":
+        return NRHABase
+    elif model_class == "nrha_adv":
+        return NRHAAdv
+    elif model_class == "nrha_mlp":
+        return NRHAMLP
+    else:
+        return BaseModel
