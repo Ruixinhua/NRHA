@@ -86,20 +86,22 @@ class BaseDataset(Dataset):
         """
         # initial behaviors attributes
         self.histories, self.impr_news, self.labels, self.impr_indexes, self.uindexes = [], [], [], [], []
+        self.his_length = []
         with open(behaviors_file, "r", encoding="utf-8") as rd:
             impr_index = 0
             for index in rd:
                 uid, time, history, impr = index.strip("\n").split(col_spl)[-4:]
 
                 history = [self.nid2index[i] for i in history.split()]
+                if len(history) == 0:
+                    history = [0]
+                self.his_length.append(min(len(history), self.hparams.his_size))
                 history = [0] * (self.hparams.his_size - len(history)) + history[:self.hparams.his_size]
 
                 impr_news = [self.nid2index[i.split("-")[0]] for i in impr.split()]
                 if not test_set:
                     self.labels.append([int(i.split("-")[1]) for i in impr.split()])
-                if uid not in self.uid2index:
-                    self.uid2index[uid] = len(self.uid2index) + 1
-                uindex = self.uid2index[uid]
+                uindex = self.uid2index[uid] if uid in self.uid2index else 0
                 self.histories.append(history)
                 self.impr_news.append(impr_news)
                 self.impr_indexes.append(impr_index)
