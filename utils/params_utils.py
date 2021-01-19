@@ -4,15 +4,15 @@ from utils.helpers import load_yaml
 class HParams:
 
     def __init__(self, **kwargs):
-        self.params = sorted(kwargs.items(), key=lambda i: i[0])
         self.__dict__.update(kwargs)
+        self.params = sorted(self.__dict__.items(), key=lambda i: i[0])
 
     def to_string(self):
         return ",".join([f"({k}, {v})" for k, v in self.params])
 
     def update(self, **kwargs):
-        self.params = sorted(kwargs.items(), key=lambda i: i[0])
         self.__dict__.update(kwargs)
+        self.params = sorted(self.__dict__.items(), key=lambda i: i[0])
         return self
 
 
@@ -67,12 +67,8 @@ def create_hparams(flags):
         data_format=flags.get("data_format", None),
         iterator_type=flags.get("iterator_type", None),
         support_quick_scoring=flags.get("support_quick_scoring", False),
-        wordEmb_file=flags.get("wordEmb_file", None),
         entityEmb_file=flags.get("entityEmb_file", None),
-        wordDict_file=flags.get("wordDict_file", None),
         entityIdDict_file=flags.get("entityIdDict_file", None),
-        userDict_file=flags.get("userDict_file", None),
-        vertDict_file=flags.get("vertDict_file", None),
         subvertDict_file=flags.get("subvertDict_file", None),
         # models
         model_type=flags.get("model_type", "nrms"),
