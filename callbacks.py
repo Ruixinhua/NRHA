@@ -15,7 +15,7 @@ class BaseCallback(Callback):
         self.dataset = BaseDataset(news_file, behaviors_file, hparams, converter, test_set)
         self.news_dataloader = DataLoader(NewsDataset(self.dataset), hparams.batch_size)
         self.user_dataloader = DataLoader(UserDataset(self.dataset), hparams.batch_size)
-        self.news_vectors, self.user_vectors, self.model_class = {}, {}, hparams.model_class
+        self.news_vectors, self.user_vectors, self.model_class = {}, {}, hparams.model
         super(BaseCallback, self).__init__()
 
     def run_news_users(self, model):
