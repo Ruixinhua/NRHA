@@ -8,7 +8,7 @@ from torch.utils.data.dataloader import DataLoader
 from utils.helpers import get_converter
 
 args = get_argument()
-hparams = get_params(args.config, head_num=int(args.head_num), head_dim=int(args.head_dim),
+hparams = get_params(args.config, head_num=int(args.head_num), head_dim=int(args.head_dim), model=args.model_class,
                      batch_size=int(args.batch_size))
 accelerator = "ddp" if int(args.gpus) > 1 else None
 print(args)
@@ -27,7 +27,9 @@ pred_dir = f"saved/prediction/{saved_dir}/{args.log}"
 valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter, ckpt_dir, interval)
 # TODO: modify name
 tb_logger = pl_loggers.TensorBoardLogger(f"saved/logs/{saved_dir}", name=args.log)
+pl.trainer.seed_everything(40)
 model_class = get_model_class(args.model_class)
+hparams.update(**{"user_embedding_size": len(train_dataset.uid2index)})
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 trainer = pl.Trainer(gpus=int(args.gpus), accelerator=accelerator, max_epochs=epochs, deterministic=True,
                      logger=tb_logger, callbacks=[valid_callback])

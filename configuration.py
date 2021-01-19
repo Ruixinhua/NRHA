@@ -5,6 +5,7 @@ import json
 from models.base import BaseModel
 from models.nrha_adv import NRHAAdv
 from models.nrha_base import NRHABase
+from models.nrha_gru import NRHAGRU
 from models.nrha_mlp import NRHAMLP
 from models.nrha_title import NRHATitle
 from utils.download_utils import download_resources, get_mind_data_set
@@ -91,6 +92,8 @@ def get_model_class(model_class):
         return NRHABase
     elif model_class == "nrha_adv":
         return NRHAAdv
+    elif model_class == "nrha_gru":
+        return NRHAGRU
     elif model_class == "nrha_mlp":
         return NRHAMLP
     else:

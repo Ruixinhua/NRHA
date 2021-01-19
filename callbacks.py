@@ -15,19 +15,23 @@ class BaseCallback(Callback):
         self.dataset = BaseDataset(news_file, behaviors_file, hparams, converter, test_set)
         self.news_dataloader = DataLoader(NewsDataset(self.dataset), hparams.batch_size)
         self.user_dataloader = DataLoader(UserDataset(self.dataset), hparams.batch_size)
-        self.news_vectors, self.user_vectors = {}, {}
+        self.news_vectors, self.user_vectors, self.model_class = {}, {}, hparams.model_class
         super(BaseCallback, self).__init__()
 
     def run_news_users(self, model):
+        device = model.device
         for batch in tqdm(self.news_dataloader):
             "Run news data"
             index, news = batch
-            news_vec = model.news_encoder(news.to(model.device))
+            news_vec = model.news_encoder(news.to(device))
             self.news_vectors.update(dict(zip(index.cpu().tolist(), news_vec.cpu().numpy())))
         for batch in tqdm(self.user_dataloader):
             "Run users data"
-            index, clicked_news = batch
-            user_vec = model.user_encoder(clicked_news.to(model.device))
+            index, clicked_news, user_id, his_length = batch
+            if self.model_class == "nrha_gru":
+                user_vec = model.user_encoder([clicked_news.to(device), user_id.to(device), his_length.to(device)])
+            else:
+                user_vec = model.user_encoder(clicked_news.to(device))
             self.user_vectors.update(dict(zip(index.cpu().tolist(), user_vec.cpu().numpy())))
 
 
