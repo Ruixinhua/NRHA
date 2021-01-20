@@ -1,3 +1,5 @@
+import os
+
 from callbacks import ValidationCallback
 from configuration import get_path, get_params, get_argument, get_model_class
 import pytorch_lightning as pl
@@ -24,6 +26,8 @@ interval, epochs = len(train_dataloader) // 3, 8
 saved_dir = f"{args.mind_type}/{args.model_class}"
 ckpt_dir = f"saved/checkpoint/{saved_dir}/{args.log}"
 pred_dir = f"saved/prediction/{saved_dir}/{args.log}"
+best_model_path = os.path.join(ckpt_dir, "best_model.ckpt")
+resume_path = best_model_path if os.path.exists(best_model_path) and args.resume else None
 valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter, ckpt_dir, interval)
 # TODO: modify name
 tb_logger = pl_loggers.TensorBoardLogger(f"saved/logs/{saved_dir}", name=args.log)
@@ -32,5 +36,5 @@ model_class = get_model_class(args.model_class)
 hparams.update(**{"user_embedding_size": len(train_dataset.uid2index)})
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 trainer = pl.Trainer(gpus=int(args.gpus), accelerator=accelerator, max_epochs=epochs, deterministic=True,
-                     logger=tb_logger, callbacks=[valid_callback])
+                     logger=tb_logger, callbacks=[valid_callback], resume_from_checkpoint=resume_path)
 trainer.fit(model_class(hparams), train_dataloader)

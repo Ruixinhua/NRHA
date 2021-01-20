@@ -82,6 +82,7 @@ def get_argument():
     parse.add_argument("--head_num", "-n", dest="head_num", metavar="INT", default=20)
     parse.add_argument("--head_dim", "-d", dest="head_dim", metavar="INT", default=20)
     parse.add_argument("--batch_size", "-b", dest="batch_size", metavar="INT", default=32)
+    parse.add_argument("--resume", "-r", dest="resume", metavar="INT", default=0, help="resume from best")
     return parse.parse_args()
 
 
