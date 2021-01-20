@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from models.base import BaseModel
-from models.layers import clones, AttLayer, TimeDistributed
+from models.nn.layers import clones, AttLayer, TimeDistributed
 
 __all__ = ["NRHABase"]
 

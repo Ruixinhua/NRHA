@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 import torch
 from models.base import BaseModel
-from models.layers import AttLayer, clones
+from models.nn.layers import AttLayer, clones
 
 
 class NRHATitle(BaseModel):
@@ -13,7 +13,7 @@ class NRHATitle(BaseModel):
 
     def sentence_encoder(self, y):
         # shape of y: [N, S, E]     N: batch size, S: sequence length, E: embedded size
-        y = self.news_self_att(y, y, y)[0]
+        y = self.news_encode_layer(y, y, y)[0]
         y = self.dropouts(y)
         # shape of y: [N, S, E]
         y = y.view(y.shape[0], y.shape[1], self.hparams.head_num, -1)

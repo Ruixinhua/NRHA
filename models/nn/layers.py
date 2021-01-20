@@ -1,5 +1,7 @@
 import copy
 import math
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -134,16 +136,46 @@ class LayerNorm(nn.Module):
         return self.a_2 * (x - mean) / (std + self.eps) + self.b_2
 
 
-class SublayerConnection(nn.Module):
-    """
-    A residual connection followed by a layer norm.
-    Note for code simplicity the norm is first as opposed to last.
-    """
-    def __init__(self, size, dropout):
-        super(SublayerConnection, self).__init__()
-        self.norm = LayerNorm(size)
-        self.dropout = nn.Dropout(dropout)
+class MLP(nn.Module):
+    """Multilayer perceptron torch module.
+    Authors: Hongwei Zhang
+    Parameters
+    ----------
+    input_size : int
+        Size of packed_input.
 
-    def forward(self, x, sublayer):
-        "Apply residual connection to any sublayer with the same size."
-        return self.dropout(sublayer(self.norm(x)))
+    hidden_layers : iterable
+        Hidden layer sizes.
+
+    dropout : float
+        Dropout rate.
+
+    activation : str
+        Name of activation function. ReLU, PReLU and Sigmoid are supported.
+    """
+    def __init__(self, input_size, hidden_layers,
+                 dropout=0.0, batch_norm=True, activation='relu'):
+        super(MLP, self).__init__()
+        modules = OrderedDict()
+
+        previous_size = input_size
+        for index, hidden_layer in enumerate(hidden_layers):
+            modules[f"dense{index}"] = nn.Linear(previous_size, hidden_layer)
+            if batch_norm:
+                modules[f"batchnorm{index}"] = nn.BatchNorm1d(hidden_layer)
+            if activation:
+                if activation.lower() == 'relu':
+                    modules[f"activation{index}"] = nn.ReLU()
+                elif activation.lower() == 'prelu':
+                    modules[f"activation{index}"] = nn.PReLU()
+                elif activation.lower() == 'sigmoid':
+                    modules[f"activation{index}"] = nn.Sigmoid()
+                else:
+                    raise NotImplementedError(f"{activation} is not supported")
+            if dropout:
+                modules[f"dropout{index}"] = nn.Dropout(dropout)
+            previous_size = hidden_layer
+        self._sequential = nn.Sequential(modules)
+
+    def forward(self, x):
+        return self._sequential(x)

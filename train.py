@@ -1,5 +1,6 @@
+import itertools
 import os
-
+import threading
 from callbacks import ValidationCallback
 from configuration import get_path, get_params, get_argument, get_model_class
 import pytorch_lightning as pl
@@ -23,18 +24,37 @@ train_dataset = TrainingDataset(train_news_file, train_behaviors_file, hparams, 
 train_dataloader = DataLoader(train_dataset, hparams.batch_size)
 # TODO: modify value
 interval, epochs = len(train_dataloader) // 3, 8
-saved_dir = f"{args.mind_type}/{args.model_class}"
-ckpt_dir = f"saved/checkpoint/{saved_dir}/{args.log}"
-pred_dir = f"saved/prediction/{saved_dir}/{args.log}"
-best_model_path = os.path.join(ckpt_dir, "best_model.ckpt")
-resume_path = best_model_path if os.path.exists(best_model_path) and args.resume else None
-valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter, ckpt_dir, interval)
 # TODO: modify name
-tb_logger = pl_loggers.TensorBoardLogger(f"saved/logs/{saved_dir}", name=args.log)
 pl.trainer.seed_everything(40)
 model_class = get_model_class(args.model_class)
 hparams.update(**{"user_embedding_size": len(train_dataset.uid2index)})
-# most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
-trainer = pl.Trainer(gpus=int(args.gpus), accelerator=accelerator, max_epochs=epochs, deterministic=True,
-                     logger=tb_logger, callbacks=[valid_callback], resume_from_checkpoint=resume_path)
-trainer.fit(model_class(hparams), train_dataloader)
+options = ["GRU", "AIGRU", "AGRU", "AUGRU"]
+head_nums = [10, 20, 30]
+head_dims = [10, 20, 30]
+option_name = "gru_type"
+
+
+def run():
+    saved_dir = f"{args.mind_type}/{args.model_class}"
+    ckpt_dir = f"saved/checkpoint/{saved_dir}/{args.log}/{option}/head_num_{head_num}/head_dim_{head_dim}"
+    best_model_path = os.path.join(ckpt_dir, "best_model.ckpt")
+    resume_path = best_model_path if os.path.exists(best_model_path) and args.resume else None
+    valid_callback = ValidationCallback(valid_news_file, valid_behaviors_file, hparams, converter, ckpt_dir, interval)
+    tb_logger = pl_loggers.TensorBoardLogger(f"saved/logs/{saved_dir}", name=option)
+    trainer = pl.Trainer(gpus=int(args.gpus), accelerator=accelerator, max_epochs=epochs, deterministic=True,
+                         logger=tb_logger, callbacks=[valid_callback], resume_from_checkpoint=resume_path)
+    trainer.fit(model_class(hparams), train_dataloader)
+    group_auc = [float(file.split("==")[1].replace(".ckpt", "")) for file in os.listdir(ckpt_dir) if "==" in file]
+    best_auc = max(group_auc)
+    for file in os.scandir(ckpt_dir):
+        if "best_model" in file.name:
+            continue
+        auc = float(file.name.split("==")[1].replace(".ckpt", ""))
+        if auc < best_auc:
+            os.remove(file.path)
+
+
+for option, head_num, head_dim in itertools.product(options, head_nums, head_dims):
+    hparams.update(**{option_name: option, "head_num": head_num, "head_dim": head_dim})
+    # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
+    run()

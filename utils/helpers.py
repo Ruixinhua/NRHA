@@ -56,7 +56,7 @@ def newsample(news, ratio):
     If length of news is less than ratio, pad zeros.
 
     Args:
-        news (list): input news list
+        news (list): packed_input news list
         ratio (int): sample number
 
     Returns:
@@ -72,7 +72,7 @@ def init_matrix(data, shape):
     """
     Initial the data matrix as shape.
     Args:
-        data (list): input data
+        data (list): packed_input data
         shape (tuple): the shape of matrix
 
     Returns:
