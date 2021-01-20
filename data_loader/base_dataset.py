@@ -76,7 +76,7 @@ class BaseDataset(Dataset):
             body_matrix = init_matrix(body, shape)
             if self.flatten_article:
                 body_matrix = body_matrix.reshape([shape[0]] + [shape[1] * shape[2]] + shape[3:])
-            self.news_matrix["body_index"] = body_matrix
+            self.news_matrix["body_index"] = body_matrix.reshape([-1, shape[1] * shape[2]])
 
     def _load_behaviors(self, behaviors_file, test_set=False, col_spl="\t"):
         """"
