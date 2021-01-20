@@ -7,7 +7,7 @@ class HParams:
         self.__dict__.update(kwargs)
         self.params = sorted(self.__dict__.items(), key=lambda i: i[0])
 
-    def to_string(self):
+    def __str__(self):
         return ",".join([f"({k}, {v})" for k, v in self.params])
 
     def update(self, **kwargs):
