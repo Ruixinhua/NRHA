@@ -89,24 +89,23 @@ def init_matrix(data, shape):
     return matrix
 
 
-def get_converter(converter_type, **kwargs):
-    if converter_type == "elmo":
-        from allennlp.modules.elmo import batch_to_ids
-        return batch_to_ids
-    elif converter_type == "word2vec":
-        # load dictionary for word2vec embedding
-        word_dict = load_dict(kwargs["word_dict_file"])
+class Converter:
+    def __init__(self, converter_type, **kwargs):
+        if converter_type == "elmo":
+            from allennlp.modules.elmo import batch_to_ids
+            self.converter = batch_to_ids
+        elif converter_type == "word2vec":
+            # load dictionary for word2vec embedding
+            self.word_dict = load_dict(kwargs["word_dict_file"])
+            self.converter = self.convert
 
-        def convert(article):
-            """
-            convert article to index
-            Args:
-                article (list(list)): It can be a batch of data or an article
+    def convert(self, article):
+        """
+        convert article to index
+        Args:
+            article (list(list)): It can be a batch of data or an article
 
-            Returns:
-            word index list
-            """
-            return [[word_dict[word] if word in word_dict else 0 for word in sent] for sent in article]
-        return convert
-    else:
-        raise ValueError("converter dataset_type must one of the values: elmo, word2vec")
+        Returns:
+        word index list
+        """
+        return [[self.word_dict[word] if word in self.word_dict else 0 for word in sent] for sent in article]

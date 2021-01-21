@@ -5,12 +5,12 @@ from callbacks import TestCallback
 from configuration import get_path, get_params, get_argument, get_model_class
 from models.base import BaseModel
 from models.nrha_title import NRHATitle
-from utils.helpers import get_converter
+from utils.helpers import Converter
 
 args = get_argument()
 hparams = get_params(args.config, head_num=int(args.head_num), head_dim=int(args.head_dim))
 test_news_file, test_behaviors_file = get_path("test", mind_type=args.mind_type)
-converter = get_converter(hparams.embedding, word_dict_file=hparams.word_dict_file)
+converter = Converter(hparams.embedding, word_dict_file=hparams.word_dict_file).converter
 saved_dir = f"{args.mind_type}/{args.model_class}"
 ckpt_dir = f"saved/checkpoint/{saved_dir}/{args.log}"
 pred_dir = f"saved/prediction/{saved_dir}/{args.log}"
