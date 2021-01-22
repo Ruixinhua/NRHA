@@ -5,6 +5,8 @@ import json
 from models.base import BaseModel
 from models.nrha_adv import NRHAAdv
 from models.nrha_base import NRHABase
+from models.nrha_body import NRHABody
+from models.nrha_body_adv import NRHABodyAdv
 from models.nrha_gru import NRHAGRU
 from models.nrha_mlp import NRHAMLP
 from models.nrha_title import NRHATitle
@@ -95,6 +97,10 @@ def get_model_class(model_class):
         return NRHAAdv
     elif model_class == "nrha_gru":
         return NRHAGRU
+    elif model_class == "nrha_body":
+        return NRHABody
+    elif model_class == "nrha_body_adv":
+        return NRHABodyAdv
     elif model_class == "nrha_mlp":
         return NRHAMLP
     else:
