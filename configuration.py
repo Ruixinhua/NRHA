@@ -7,6 +7,7 @@ from models.nrha_adv import NRHAAdv
 from models.nrha_base import NRHABase
 from models.nrha_body import NRHABody
 from models.nrha_body_adv import NRHABodyAdv
+from models.nrha_conv import NRHAConv
 from models.nrha_gru import NRHAGRU
 from models.nrha_mlp import NRHAMLP
 from models.nrha_title import NRHATitle
@@ -85,6 +86,8 @@ def get_argument():
     parse.add_argument("--head_dim", "-d", dest="head_dim", metavar="INT", default=20)
     parse.add_argument("--batch_size", "-b", dest="batch_size", metavar="INT", default=32)
     parse.add_argument("--resume", "-r", dest="resume", metavar="INT", default=0, help="resume from best")
+    parse.add_argument("--train_mode", "-i", dest="mode", metavar="INT", default=0,
+                       help="0: default test; 1: head number test; 2: body shape test")
     return parse.parse_args()
 
 
@@ -95,6 +98,8 @@ def get_model_class(model_class):
         return NRHABase
     elif model_class == "nrha_adv":
         return NRHAAdv
+    elif model_class == "nrha_conv":
+        return NRHAConv
     elif model_class == "nrha_gru":
         return NRHAGRU
     elif model_class == "nrha_body":
