@@ -1,7 +1,7 @@
 import os
 import pytorch_lightning as pl
 import pytorch_lightning.loggers as pl_loggers
-
+import numpy as np
 from callbacks import ValidationCallback
 from configuration import get_path, get_params, get_argument, get_model_class
 from data_loader.training_dataset import TrainingDataset
@@ -29,7 +29,8 @@ def run(option=None):
     tb_logger = pl_loggers.TensorBoardLogger(f"saved/logs/{saved_dir}")
     # trainer object, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
     trainer = pl.Trainer(gpus=int(args.gpus), accelerator=accelerator, max_epochs=epochs, deterministic=True,
-                         logger=tb_logger, callbacks=[valid_callback], resume_from_checkpoint=resume_path)
+                         logger=tb_logger, callbacks=[valid_callback], resume_from_checkpoint=resume_path,
+                         profiler="simple")
     model_class = get_model_class(args.model_class)
     trainer.fit(model_class(hparams), train_dataloader)
     group_auc = [float(file.split("==")[1].replace(".ckpt", "")) for file in os.listdir(ckpt_dir) if "==" in file]
@@ -58,6 +59,7 @@ if __name__ == "__main__":
     print(args)
     mode = int(args.mode)
     if mode == 0:
+        hparams.update(**{"learning_rate": hparams.learning_rate})
         run(args.log)
     elif mode == 1:
         head_nums = [10, 20]
