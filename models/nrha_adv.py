@@ -1,8 +1,8 @@
 import torch.nn as nn
 
-from models.layers import TimeDistributed, MultiHeadedAttention, LayerNorm, clones, SublayerConnection, \
-    PositionwiseFeedForward
+from models.nn.layers import PositionwiseFeedForward, TimeDistributed, AttLayer
 from models.nrha_base import NRHABase
+from models.nrha_conv import NRHAConv
 
 
 class NRHAAdv(NRHABase):
@@ -10,21 +10,24 @@ class NRHAAdv(NRHABase):
     def __init__(self, hparams):
         super().__init__(hparams)
         out_dim = hparams.head_num * hparams.head_dim
-        self.feed_forward = PositionwiseFeedForward(out_dim, 512, self.dropout)
-        self.sublayer = clones(SublayerConnection(out_dim, self.dropout), 2)
-        # self.user_self_att = nn.GRU(out_dim, out_dim)
+        self.news_encode_layer = nn.LSTM(self.word_emb_dim, out_dim, batch_first=True, bidirectional=True)
+        self.user_encode_layer = nn.LSTM(out_dim * 2, out_dim, batch_first=True, bidirectional=True)
+        self.news_att_layer = AttLayer(out_dim * 2, self.attention_hidden_dim)
+        self.user_att_layer = AttLayer(out_dim * 2, self.attention_hidden_dim)
+        # self.news_encode_layer = PositionwiseFeedForward(self.word_emb_dim, out_dim, dropout=self.dropout)
+        # self.user_encode_layer = PositionwiseFeedForward(out_dim, out_dim, dropout=self.dropout)
 
     def sentence_encoder(self, y):
-        y = self.feed_forward(self.news_self_att(y)).view(y.size(0), -1, self.head_num, self.head_dim)
-        return self.head_encoder(y, self.news_attentions)
-
-    def news_encoder(self, sequences):
-        y = self._embedding_layer(sequences)
-        y = self.sentence_encoder(y)
+        y, (_, _) = self.news_encode_layer(y)
+        y, _ = self.news_att_layer(y)
+        # y = y.view(y.size(0), -1, self.head_num, self.head_dim)
+        # return self.head_encoder(y, self.news_attentions)
         return y
 
     def user_encoder(self, his_input_title):
-        # run the history news read by user
+        # change size to (S, N, D): sequence length, batch size, word dimension
         y = TimeDistributed(self.news_encoder)(his_input_title)
-        y = y.view(y.size(0), -1, self.head_num, self.head_dim)
-        return self.head_encoder(y, self.news_attentions)
+        # change size back to (N, S, D)
+        y, (_, _) = self.user_encode_layer(y)
+        y = self.user_att_layer(y)[0]
+        return y
