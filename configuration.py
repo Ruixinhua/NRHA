@@ -7,9 +7,11 @@ from models.nrha_adv import NRHAAdv
 from models.nrha_base import NRHABase
 from models.nrha_body import NRHABody
 from models.nrha_body_adv import NRHABodyAdv
+from models.nrha_body_bilstm import NRHABodyBiLSTM
 from models.nrha_conv import NRHAConv
 from models.nrha_gru import NRHAGRU
 from models.nrha_mlp import NRHAMLP
+from models.nrha_test import NRHATest
 from models.nrha_title import NRHATitle
 from utils.download_utils import download_resources, get_mind_data_set
 from utils.params_utils import prepare_hparams
@@ -88,6 +90,7 @@ def get_argument():
     parse.add_argument("--resume", "-r", dest="resume", metavar="INT", default=0, help="resume from best")
     parse.add_argument("--train_mode", "-i", dest="mode", metavar="INT", default=0,
                        help="0: default test; 1: head number test; 2: body shape test")
+    parse.add_argument("--num_workers", "-w", dest="num_workers", metavar="INT", default=0)
     return parse.parse_args()
 
 
@@ -104,9 +107,13 @@ def get_model_class(model_class):
         return NRHAGRU
     elif model_class == "nrha_body":
         return NRHABody
+    elif model_class == "nrha_body_bilstm":
+        return NRHABodyBiLSTM
     elif model_class == "nrha_body_adv":
         return NRHABodyAdv
     elif model_class == "nrha_mlp":
         return NRHAMLP
+    elif model_class == "nrha_test":
+        return NRHATest
     else:
         return BaseModel
