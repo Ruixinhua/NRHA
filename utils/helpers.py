@@ -3,6 +3,7 @@ import random
 import re
 import yaml
 import numpy as np
+from transformers import AutoTokenizer
 
 
 def load_dict(file_path):
@@ -98,6 +99,16 @@ class Converter:
             # load dictionary for word2vec embedding
             self.word_dict = load_dict(kwargs["word_dict_file"])
             self.converter = self.convert
+        elif converter_type == "distill_bert":
+            self.tokenizer = AutoTokenizer.from_pretrained(kwargs["model_name"])
+            self.max_seq_len = kwargs["max_seq_len"]
+            self.converter = self.encode
+
+    def encode(self, articles):
+        x_encoded = [self.tokenizer.encode(" ".join(x), add_special_tokens=True,
+                                           max_length=self.max_seq_len, truncation=True)
+                     for x in articles]
+        return x_encoded
 
     def convert(self, article):
         """

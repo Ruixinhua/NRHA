@@ -42,17 +42,16 @@ class BaseDataset(Dataset):
 
                 # add news body
                 if articles:
-                    news_id = url.split("/")[-1].split(".")[0]
-                    if news_id not in articles:
+                    if nid not in articles:
                         article = [""] if self.flatten_article else [[""]]
                     else:
                         if self.flatten_article:
                             # flatten body, load an article in a list
-                            article = word_tokenize(" ".join(articles[news_id]))
+                            article = word_tokenize(" ".join(articles[nid]))
                             article = article if article else [""]
                         else:
                             # load an article in multiply lists
-                            article = [word_tokenize(sent) for sent in articles[news_id]]
+                            article = [word_tokenize(sent) for sent in articles[nid]]
                             article = article if article else [[""]]
                     self.body.append(article)
                 self.nid2index[nid] = len(self.nid2index) + 1
@@ -75,8 +74,10 @@ class BaseDataset(Dataset):
             shape = [len(body)] + self.hparams.body_shape
             body_matrix = init_matrix(body, shape)
             if self.flatten_article:
-                body_matrix = body_matrix.reshape([shape[0]] + [shape[1] * shape[2]] + shape[3:])
-            self.news_matrix["body_index"] = body_matrix.reshape([-1, shape[1] * shape[2]])
+                body_matrix = body_matrix.reshape([shape[0]] + [shape[1]] + shape[2:])
+            else:
+                body_matrix = body_matrix.reshape([-1, shape[1] * shape[2]])
+            self.news_matrix["body_index"] = body_matrix
 
     def _load_behaviors(self, behaviors_file, test_set=False, col_spl="\t"):
         """"
