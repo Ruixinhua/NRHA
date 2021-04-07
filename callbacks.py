@@ -16,6 +16,7 @@ class BaseCallback(Callback):
         self.news_dataloader = DataLoader(NewsDataset(self.dataset), hparams.batch_size)
         self.user_dataloader = DataLoader(UserDataset(self.dataset), hparams.batch_size)
         self.news_vectors, self.user_vectors, self.model_class = {}, {}, hparams.model
+        self.hparams = hparams
         super(BaseCallback, self).__init__()
 
     def run_news_users(self, model):
@@ -23,12 +24,19 @@ class BaseCallback(Callback):
         for batch in tqdm(self.news_dataloader):
             "Run news data"
             index, news = batch
-            news_vec = model.news_encoder(news.to(device))
+            if self.hparams.embedding == "distill_bert":
+                news, mask = news
+                news_vec = model.news_encoder((news.to(device), mask.to(device)))
+            else:
+                news_vec = model.news_encoder(news.to(device))
             self.news_vectors.update(dict(zip(index.cpu().tolist(), news_vec.cpu().numpy())))
         for batch in tqdm(self.user_dataloader):
             "Run users data"
             index, clicked_news, user_id, his_length = batch
-            if self.model_class == "nrha_gru":
+            if self.hparams.embedding == "distill_bert":
+                clicked_news, news_mask = clicked_news
+                user_vec = model.user_encoder((clicked_news.to(device), news_mask.to(device)))
+            elif self.model_class == "nrha_gru":
                 user_vec = model.user_encoder([clicked_news.to(device), user_id.to(device), his_length.to(device)])
             else:
                 user_vec = model.user_encoder(clicked_news.to(device))

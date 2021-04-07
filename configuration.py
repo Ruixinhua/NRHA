@@ -3,6 +3,7 @@ import os
 import json
 
 from models.base import BaseModel
+from models.distill_bert import DistillBert
 from models.nrha_adv import NRHAAdv
 from models.nrha_base import NRHABase
 from models.nrha_body import NRHABody
@@ -81,16 +82,19 @@ def get_argument():
     parse.add_argument("--log", "-l", dest="log", metavar="FILE", help="log file", default="test")
     parse.add_argument("--configure", "-c", dest="config", metavar="FILE", help="yaml file",
                        default=r"config/nrha.yaml")
-    parse.add_argument("--gup_num", "-g", dest="gpus", metavar="INT", default=1, help="The number of gpu")
+    parse.add_argument("--gup_num", "-g", dest="gpus", type=int, default=1, help="The number of gpu")
     parse.add_argument("--model_class", "-m", dest="model_class", metavar="TEXT", default="nrha")
     parse.add_argument("--mind_type", "-t", dest="mind_type", metavar="TEXT", default="demo")
-    parse.add_argument("--head_num", "-n", dest="head_num", metavar="INT", default=20)
-    parse.add_argument("--head_dim", "-d", dest="head_dim", metavar="INT", default=20)
-    parse.add_argument("--batch_size", "-b", dest="batch_size", metavar="INT", default=32)
-    parse.add_argument("--resume", "-r", dest="resume", metavar="INT", default=0, help="resume from best")
-    parse.add_argument("--train_mode", "-i", dest="mode", metavar="INT", default=0,
-                       help="0: default test; 1: head number test; 2: body shape test")
-    parse.add_argument("--num_workers", "-w", dest="num_workers", metavar="INT", default=0)
+    parse.add_argument("--head_num", "-n", dest="head_num", type=int, default=20)
+    parse.add_argument("--head_dim", "-d", dest="head_dim", type=int, default=20)
+    parse.add_argument("--batch_size", "-b", dest="batch_size", type=int, default=32)
+    parse.add_argument("--resume", "-r", dest="resume", type=str, default=None, help="resume from best")
+    parse.add_argument("--train_mode", "-i", dest="mode", type=int, default=0,
+                       help="0: default test; 1: head number test; 2: body shape test; 3: nrha test")
+    parse.add_argument("--num_workers", "-w", dest="num_workers", type=int, default=0)
+    parse.add_argument("--news_layer", "-f", dest="news_layer", type=int, default=0)
+    parse.add_argument("--user_layer", "-u", dest="user_layer", type=int, default=0)
+    parse.add_argument("--n_layers", "-nl", dest="n_layers", type=int, default=1)
     return parse.parse_args()
 
 
@@ -115,5 +119,7 @@ def get_model_class(model_class):
         return NRHAMLP
     elif model_class == "nrha_test":
         return NRHATest
+    elif model_class == "distill_bert":
+        return DistillBert
     else:
         return BaseModel

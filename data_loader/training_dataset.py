@@ -16,6 +16,7 @@ class TrainingDataset(BaseDataset):
         attrs = ["labels", "impression_index", "user_index", "candidate_index", "clicked_index", "history_length"]
         self.impression_index = {attr: [] for attr in attrs}
         indexes = np.arange(len(self.labels))
+        np.random.seed(40)
         if self.npratio > 0:
             np.random.shuffle(indexes)
 
@@ -79,6 +80,12 @@ class TrainingDataset(BaseDataset):
         if self.hparams.model == "nrha_gru":
             input_feat.append(torch.tensor(self.impression_index["user_index"][index], dtype=torch.long))
             input_feat.append(torch.tensor(self.impression_index["history_length"][index], dtype=torch.long))
+        if self.hparams.embedding == "distill_bert":
+            # pass mask list to the model
+            # clicked index mask
+            input_feat.append(torch.tensor(np.where(input_feat[0] == 0, 0, 1), dtype=torch.long))
+            # candidate index mask
+            input_feat.append(torch.tensor(np.where(input_feat[1] == 0, 0, 1), dtype=torch.long))
         label = torch.tensor(self.impression_index["labels"][index], dtype=torch.long)
         return input_feat, label
 

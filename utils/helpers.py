@@ -91,17 +91,18 @@ def init_matrix(data, shape):
 
 
 class Converter:
-    def __init__(self, converter_type, **kwargs):
+    def __init__(self, hparams):
+        converter_type = hparams.embedding
         if converter_type == "elmo":
             from allennlp.modules.elmo import batch_to_ids
             self.converter = batch_to_ids
         elif converter_type == "word2vec":
             # load dictionary for word2vec embedding
-            self.word_dict = load_dict(kwargs["word_dict_file"])
+            self.word_dict = load_dict(hparams.word_dict_file)
             self.converter = self.convert
         elif converter_type == "distill_bert":
-            self.tokenizer = AutoTokenizer.from_pretrained(kwargs["model_name"])
-            self.max_seq_len = kwargs["max_seq_len"]
+            self.tokenizer = AutoTokenizer.from_pretrained(hparams.model_name)
+            self.max_seq_len = hparams.max_seq_len
             self.converter = self.encode
 
     def encode(self, articles):
