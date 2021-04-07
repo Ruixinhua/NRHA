@@ -1,0 +1,42 @@
+data:
+  his_size: 50
+  data_format: news
+  npratio: 4
+  max_seq_len: 30
+  news_attr:
+    title:
+      - 30
+
+info:
+  metrics:
+  - group_auc
+  - mean_mrr
+  - ndcg@5;10
+  show_step: 100000
+  
+model:
+  model_name: distilbert-base-uncased
+  attention_hidden_dim: 200
+  word_emb_dim: 300
+  dropout: 0.2
+  head_num: 10
+  head_dim: 30
+  model_type: nrha
+  embedding: distill_bert
+  n_layers: 2
+
+  att_hidden_layers:
+    - 80
+    - 40
+  att_dropout: 0
+  activation: prelu
+
+  kernel_size: 3
+
+train:
+  batch_size: 32
+  epochs: 10
+  learning_rate: 0.00005
+  loss: cross_entropy_loss
+  optimizer: adam
+  support_quick_scoring: true
